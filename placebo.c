@@ -23,11 +23,12 @@ static void control(int sig)
     exit(sig);
 }
 
+
 int main()
 {
     struct pidfh *pfh = NULL;
     pid_t otherpid = 0;
-   
+
     signal(SIGABRT, &control);
     signal(SIGALRM, &control);
     signal(SIGILL, &control);
@@ -36,34 +37,43 @@ int main()
     signal(SIGINFO, &control);
     signal(SIGINT, &control);
 
+
+    printf("finished registering sigs\n");
     pfh = pidfile_open("/var/run/placebo.pid", 0600, &otherpid);
     if (pfh == NULL)
     {
         if (errno == EEXIST)
         {
+	    printf("Daemon already running, pid: %d\n", otherpid);
             fprintf(stderr, "Daemon already running, pid: %d.", otherpid);
             exit(EXIT_FAILURE);
         }
+	printf("Cannot open or create pidfile\n");
         fputs("Cannot open or create pidfile", stderr);
     }
+    
+    printf("pidfile opened\n");
+
 
     if (daemon(0, 0) == -1)
     {
+        printf("daemon fails\n");
         fputs("daemon() fails.", stderr);
         pidfile_remove(pfh);
         exit(EXIT_FAILURE);
+
     }
 
+    printf("writing to pid file\n");
     pidfile_write(pfh);
-   
+  
+    printf("starting endless loop\n"); 
     while (1)
     {
-        struct timespec snooze, ignore;
-        snooze.tv_nsec = 10000000L;
-        snooze.tv_sec = 0;
-        ignore = snooze;
-        nanosleep(&snooze, &ignore);
+        printf("tick\n");
+	sleep(2);
     }
+    printf("exit service\n");
     pidfile_remove(pfh);
     return 0;
 }
